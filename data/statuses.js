@@ -91,7 +91,7 @@ exports.BattleStatuses = {
 		onBeforeMovePriority: 10,
 		onBeforeMove: function (pokemon, target, move) {
 			if (move.flags['defrost']) return;
-			if (this.random(5) === 0) {
+			if (this.random(3) === 0) {
 				pokemon.cureStatus();
 				return;
 			}
@@ -253,7 +253,10 @@ exports.BattleStatuses = {
 		},
 		onEnd: function (target) {
 			if (this.effectData.trueDuration > 1) return;
-			target.addVolatile('confusion');
+			//target.addVolatile('confusion');
+			if(!target.addVolatile('confusion')){
+				this.boost({evasion:-1});
+			}
 		},
 		onLockMove: function (pokemon) {
 			return this.effectData.move;
@@ -414,15 +417,16 @@ exports.BattleStatuses = {
 	},
 
 	// weather is implemented here since it's so important to the game
+	//currently made all weather start for 8 turns (12 with rocks)
 
 	raindance: {
 		effectType: 'Weather',
-		duration: 5,
+		duration: 8,
 		durationCallback: function (source, effect) {
 			if (source && source.hasItem('damprock')) {
-				return 8;
+				return 12;
 			}
-			return 5;
+			return 8;
 		},
 		onWeatherModifyDamage: function (damage, attacker, defender, move) {
 			if (move.type === 'Water') {
@@ -481,12 +485,12 @@ exports.BattleStatuses = {
 	},
 	sunnyday: {
 		effectType: 'Weather',
-		duration: 5,
+		duration: 8,
 		durationCallback: function (source, effect) {
 			if (source && source.hasItem('heatrock')) {
-				return 8;
+				return 12;
 			}
-			return 5;
+			return 8;
 		},
 		onWeatherModifyDamage: function (damage, attacker, defender, move) {
 			if (move.type === 'Fire') {
@@ -551,12 +555,12 @@ exports.BattleStatuses = {
 	},
 	sandstorm: {
 		effectType: 'Weather',
-		duration: 5,
+		duration: 8,
 		durationCallback: function (source, effect) {
 			if (source && source.hasItem('smoothrock')) {
-				return 8;
+				return 12;
 			}
-			return 5;
+			return 8;
 		},
 		// This should be applied directly to the stat before any of the other modifiers are chained
 		// So we give it increased priority.
@@ -588,12 +592,12 @@ exports.BattleStatuses = {
 	},
 	hail: {
 		effectType: 'Weather',
-		duration: 5,
+		duration: 8,
 		durationCallback: function (source, effect) {
 			if (source && source.hasItem('icyrock')) {
-				return 8;
+				return 12;
 			}
-			return 5;
+			return 8;
 		},
 		onStart: function (battle, source, effect) {
 			if (effect && effect.effectType === 'Ability') {

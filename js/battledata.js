@@ -461,7 +461,7 @@ var Tools = {
 			var buf = '<li class="result">';
 			var template = Tools.getTemplate(target);
 			if (!template.abilities || !template.baseStats) return '[not supported in replays]';
-			buf += '<span class="col numcol">' + (template.tier || Tools.getTemplate(template.baseSpecies).tier) + '</span> ';
+			buf += '<span class="col numcol">' + 'Icy'/*(template.tier || Tools.getTemplate(template.baseSpecies).tier)*/ + '</span> ';
 			buf += '<span class="col iconcol"><span style="' + Tools.getPokemonIcon(template) + '"></span></span> ';
 			buf += '<span class="col pokemonnamecol" style="white-space:nowrap"><a href="https://pokemonshowdown.com/dex/pokemon/' + template.id + '" target="_blank">' + template.species + '</a></span> ';
 			buf += '<span class="col typecol">';

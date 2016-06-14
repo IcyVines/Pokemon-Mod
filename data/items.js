@@ -569,6 +569,20 @@ exports.BattleItems = {
 		gen: 5,
 		desc: "Holder's Techno Blast is Fire type.",
 	},
+	"butterfrenite": {
+		id: "butterfrenite",
+		name: "Butterfrenite",
+		spritenum: 589,
+		megaStone: "Butterfree-Mega",
+		megaEvolves: "Butterfree",
+		onTakeItem: function(item, source) {
+			if (item.megaEvolves === source.baseTemplate.baseSpecies) return false;
+			return true;
+		},
+		num: 771,
+		gen: 6,
+		desc: "Mega-evolves Butterfree."
+	},
 	"cameruptite": {
 		id: "cameruptite",
 		name: "Cameruptite",
@@ -1511,6 +1525,20 @@ exports.BattleItems = {
 		num: 539,
 		gen: 5,
 		desc: "Holder's weight is halved.",
+	},
+	"flygonite": {
+		id: "flygonite",
+		name: "Flygonite",
+		spritenum: 589,
+		megaStone: "Flygon-Mega",
+		megaEvolves: "Flygon",
+		onTakeItem: function(item, source) {
+			if (item.megaEvolves === source.baseTemplate.baseSpecies) return false;
+			return true;
+		},
+		num: 772,
+		gen: 6,
+		desc: "Mega-evolves Flygon."
 	},
 	"flyinggem": {
 		id: "flyinggem",

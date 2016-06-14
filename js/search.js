@@ -1006,7 +1006,7 @@
 
 		// number
 		// buf += '<span class="col numcol">' + (pokemon.num >= 0 ? pokemon.num : 'CAP') + '</span> ';
-		buf += '<span class="col numcol">' + (this.gen >= 6 ? pokemon.tier || Tools.getTemplate(pokemon.baseSpecies).tier : pokemon.num) + '</span> ';
+		buf += '<span class="col numcol">' + /*(this.gen >= 6 ? pokemon.tier || Tools.getTemplate(pokemon.baseSpecies).tier : pokemon.num)*/'Icy' + '</span> ';
 
 		// icon
 		buf += '<span class="col iconcol">';

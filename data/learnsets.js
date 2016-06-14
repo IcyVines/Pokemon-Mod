@@ -1480,6 +1480,51 @@ exports.BattleLearnsets = {
 		vacuumwave: ["4T"],
 		wrap: ["4L1"],
 	}},
+	toxeon: {
+        learnset: {
+            acidspray: ["6M"],
+            blight: ["6M"],
+            clearsmog: ["6M"],
+            gunkshot: ["6M"],
+            poisonjab: ["6M"],
+            poisontail: ["6M"],
+            signalbeam: ["6M"],
+            sludge: ["6M"],
+            sludgebomb: ["6M"],
+            sludgewave: ["6M"],
+            toxicspikes: ["6M"],
+            uturn: ["6M"],
+            venomdrench: ["6M"],
+            venommortar: ["6M"],
+            venoshock: ["6M"]
+        }
+    },
+    regaleon: {
+        learnset: {
+            dracometeor: ["6M"],
+            dragondance: ["6M"],
+            dragonfang: ["6M"],
+            dragonpulse: ["6M"],
+            dragonrush: ["6M"],
+            dragontail: ["6M"],
+            firefang: ["6M"],
+            icefang: ["6M"],
+            thunderfang: ["6M"]
+        }
+    },
+    mummeon: {
+        learnset: {
+            curse: ["6M"],
+            darkpulse: ["6M"],
+            destinybond: ["6M"],
+            icebeam: ["6M"],
+            ominouswind: ["6M"],
+            psychic: ["6M"],
+            shadowsneak: ["6M"],
+            sludgebomb: ["6M"],
+            thunderbolt: ["6M"]
+        }
+    },
 	bulbasaur: {learnset: {
 		amnesia: ["6E", "5E", "4E"],
 		attract: ["6M", "5M", "4M", "3M"],
