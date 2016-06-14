@@ -1790,7 +1790,7 @@ exports.BattleAbilities = {
 		onDamage: function(damage, target, source, effect) {
 			if (effect && effect.effectType === 'Move' && damage >= target.hp) {
 				//if(Math.random()*100 < 30){
-				if(target.removeVolatile('laststand') {
+				if(target.removeVolatile('laststand')) {
 					this.boost({atk:1, spa:1, spe:1});
 					this.debug('Last Stand Boost');
 					return target.hp - 1;
