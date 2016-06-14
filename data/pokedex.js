@@ -20226,7 +20226,7 @@ exports.BattlePokedex = {
 		eggGroups: ["Human-Like", "Ground"],
 	},
 	toxeon: {
-        num: -62,
+        num: -64,
         species: "Toxeon",
         types: ["Poison"],
         baseStats: {
@@ -20250,7 +20250,7 @@ exports.BattlePokedex = {
         eggGroups: ["Field"]
     },
     regaleon: {
-        num: -63,
+        num: -65,
         species: "Regaleon",
         types: ["Dragon"],
         baseStats: {
@@ -20274,7 +20274,7 @@ exports.BattlePokedex = {
         eggGroups: ["Field"]
     },
     mummeon: {
-        num: -64,
+        num: -66,
         species: "Mummeon",
         types: ["Ghost"],
         baseStats: {

@@ -17527,6 +17527,10 @@ exports.BattleLearnsets = {
 		watersport: ["6L5", "6E", "5L5", "5E"],
 		whirlpool: ["4M"],
 		workup: ["5M"],
+		dragontail: ["6M"],
+		aquatail: ["6M"],
+		bellydrum: ["6M"],
+		playrough: ["6M"],
 	}},
 	marill: {learnset: {
 		amnesia: ["6E", "5E", "4E", "3E"],
