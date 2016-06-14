@@ -483,6 +483,7 @@ if (cluster.isMaster) {
 		});
 	});
 	server.installHandlers(app, {});
+	Config.bindaddress = '192.168.1.2';
 	if (!Config.bindaddress) Config.bindaddress = '0.0.0.0';
 	app.listen(Config.port, Config.bindaddress);
 	console.log('Worker ' + cluster.worker.id + ' now listening on ' + Config.bindaddress + ':' + Config.port);
