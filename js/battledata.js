@@ -342,10 +342,10 @@ var linkRegex = new RegExp(
 
 var Tools = {
 
-	resourcePrefix: (function () {
-		var prefix = '';
-		if (document.location.protocol === 'file:') prefix = 'https:';
-		return prefix + '//play.pokemonshowdown.com/';
+	resourcePrefix: (function() {
+    	var prefix = '';
+    	if (document.location.protocol === 'file:') prefix = 'http:';
+    	return prefix + '//play.pokemonshowdown.com/'; // this is the prefix it uses to fetch resources, like sprites
 	})(),
 
 	fxPrefix: (function () {
