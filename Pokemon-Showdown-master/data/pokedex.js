@@ -4343,9 +4343,9 @@ exports.BattlePokedex = {
 	azurill: {
 		num: 298,
 		species: "Azurill",
-		types: ["Water", "Fairy"],
+		types: ["Normal", "Fairy"],
 		genderRatio: {M: 0.25, F: 0.75},
-		baseStats: {hp: 50, atk: 50, def: 70, spa: 50, spd: 70, spe: 95},
+		baseStats: {hp: 50, atk: 20, def: 40, spa: 20, spd: 40, spe: 20},
 		abilities: {0: "Thick Fat", 1: "Huge Power", H: "Sap Sipper"},
 		heightm: 0.2,
 		weightkg: 2,
