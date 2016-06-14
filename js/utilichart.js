@@ -63,7 +63,7 @@ function BattleChart() {
 		var tier = pokemon.tier;
 		if (!tier) tier = Tools.getTemplate(pokemon.baseSpecies || pokemon.species).tier || 'Illegal';
 
-		text += '<span class="col numcol">' + tier + '</span> ';
+		text += '<span class="col numcol">' + 'Icy' + '</span> ';
 
 		var name = Tools.escapeHTML(pokemon.name);
 
