@@ -263,10 +263,9 @@ exports.BattleMovedex = {
 		shortDesc: "High critical hit ratio. Hits adjacent foes.",
 		id: "aircutter",
 		name: "Air Cutter",
-		isSword: true,
 		pp: 25,
 		priority: 0,
-		flags: {protect: 1, mirror: 1},
+		flags: {protect: 1, mirror: 1, sword: 1},
 		critRatio: 2,
 		secondary: false,
 		target: "allAdjacentFoes",
@@ -283,10 +282,9 @@ exports.BattleMovedex = {
 		id: "airslash",
 		isViable: true,
 		name: "Air Slash",
-		isSword: true,
 		pp: 15,
 		priority: 0,
-		flags: {protect: 1, mirror: 1, distance: 1},
+		flags: {protect: 1, mirror: 1, distance: 1, sword: 1},
 		secondary: {
 			chance: 30,
 			volatileStatus: 'flinch',
@@ -2304,6 +2302,10 @@ exports.BattleMovedex = {
 			onTryHitPriority: 3,
 			onTryHit: function (target, source, move) {
 				if (move && (move.target === 'self' || move.category !== 'Status')) return;
+				if(source.ability === 'permeate'){
+					source.addVolatile('permeate');
+					return;
+				}
 				this.add('-activate', target, 'Crafty Shield');
 				return null;
 			},
@@ -2343,7 +2345,7 @@ exports.BattleMovedex = {
 		name: "Cross Poison",
 		pp: 20,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		secondary: {
 			chance: 10,
 			status: 'psn',
@@ -2474,7 +2476,7 @@ exports.BattleMovedex = {
 		name: "Cut",
 		pp: 30,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		secondary: false,
 		target: "normal",
 		type: "Normal",
@@ -3146,7 +3148,7 @@ exports.BattleMovedex = {
 		name: "Dragon Claw",
 		pp: 15,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		secondary: false,
 		target: "normal",
 		type: "Dragon",
@@ -3521,6 +3523,12 @@ exports.BattleMovedex = {
 				if (status.id === 'slp' && target.isGrounded() && !target.isSemiInvulnerable()) {
 					this.debug('Interrupting sleep from Electric Terrain');
 					return false;
+				}
+			},
+			onModifySpe: function(spe, pokemon){
+				if(pokemon.hasType('Steel') && pokemon.isGrounded() && !pokemon.isSemiInvulnerable()){
+					this.debug('electric terrain steel speed boost');
+					return this.chainModify(1.25);
 				}
 			},
 			onTryHit: function (target, source, move) {
@@ -4085,7 +4093,7 @@ exports.BattleMovedex = {
 		name: "False Swipe",
 		pp: 40,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		noFaint: true,
 		secondary: false,
 		target: "normal",
@@ -4142,7 +4150,7 @@ exports.BattleMovedex = {
 		name: "Fell Stinger",
 		pp: 25,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		onHit: function (target, pokemon) {
 			pokemon.addVolatile('fellstinger');
 		},
@@ -4182,6 +4190,72 @@ exports.BattleMovedex = {
 		target: "normal",
 		type: "Fire",
 		contestType: "Beautiful",
+	},
+	"fieryterrain": {
+		num: 700,
+		accuracy: true,
+		basePower: 0,
+		category: "Status",
+		desc: "For five turns, non Fire and Dragon-type Pokemon on the ground lose 1/16, or 1/8 in sun, of their HP each turn. Fire-type moves are powered up by 50%. Grounded Pokemon cannot be frozen or put to sleep. Rain and Sandstorm remove the terrain.",
+		shortDesc: "If on ground, lose HP + Fire moves stronger.",
+		id: "fieryterrain",
+		name: "Fiery Terrain",
+		pp: 10,
+		priority: 0,
+		terrain: 'fieryterrain',
+		isViable: true,
+		flags: {nonsky: 1},
+		effect: {
+			duration: 5,
+			durationCallback: function(target, source, effect) {
+			if (source && source.ability === 'terraformer') {
+					return 5;
+				}
+				return 5;
+			},
+			onBasePower: function(basePower, attacker, defender, move) {
+				if (move.type === 'Fire' && attacker.runImmunity('Ground')) {
+					this.debug('fiery terrain boost');
+					return this.chainModify(1.5);
+				}
+			},
+			onSetStatus: function(status, target, source, effect) {
+				if ((status.id === 'slp' || status.id === 'frz') && target.runImmunity('Ground')) {
+					this.debug('Interrupting sleep/freeze from Fiery Terrain');
+					return false;
+				}
+			},
+			onStart: function(target, source) {
+				this.add('-fieldstart', 'move: Fiery Terrain');
+			},
+			onResidualOrder: 5,
+			onResidualSubOrder: 2,
+			onResidual: function(battle) {
+				this.debug('onResidual battle');
+				var damagePercent = 16;
+				if(this.isWeather('sunnyday')) damagePercent = 8;
+				for (var s in battle.sides) {
+					for (var p in battle.sides[s].active) {
+						var pokemon = battle.sides[s].active[p];
+						if (pokemon.runImmunity('Ground') && (!pokemon.hasType('Fire') && !pokemon.hasType('Dragon'))) {
+							this.debug('Pokémon is grounded, damage through Fiery Terrain.');
+							this.damage(pokemon.maxhp / damagePercent, pokemon, pokemon);
+						}
+					}
+				}
+			},
+			onUpdate: function(pokemon) {
+				if (this.isWeather(['raindance','sandstorm'])) {
+					this.clearTerrain();
+				}
+			},
+			onEnd: function() {
+				this.add('-fieldend', 'move: Fiery Terrain');
+			}
+		},
+		secondary: false,
+		target: "all",
+		type: "Fire"
 	},
 	"finalgambit": {
 		num: 515,
@@ -5125,7 +5199,7 @@ exports.BattleMovedex = {
 		name: "Fury Cutter",
 		pp: 20,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		onHit: function (target, source) {
 			source.addVolatile('furycutter');
 		},
@@ -5157,7 +5231,7 @@ exports.BattleMovedex = {
 		name: "Fury Swipes",
 		pp: 15,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		multihit: [2, 5],
 		secondary: false,
 		target: "normal",
@@ -5572,7 +5646,7 @@ exports.BattleMovedex = {
 		effect: {
 			duration: 5,
 			onBasePower: function (basePower, attacker, defender, move) {
-				let weakenedMoves = {'earthquake':1, 'bulldoze':1, 'magnitude':1};
+				let weakenedMoves = {'earthquake':1, 'bulldoze':1, 'magnitude':1, 'quake':1};
 				if (move.id in weakenedMoves) {
 					this.debug('move weakened by grassy terrain');
 					return this.chainModify(0.5);
@@ -5580,6 +5654,12 @@ exports.BattleMovedex = {
 				if (move.type === 'Grass' && attacker.isGrounded()) {
 					this.debug('grassy terrain boost');
 					return this.chainModify(1.5);
+				}
+			},
+			onModifySpe: function(spe, pokemon){
+				if(pokemon.hasType('Bug') && pokemon.isGrounded()){
+					this.debug('grassy terrain bug speed boost');
+					return this.chainModify(1.25);
 				}
 			},
 			onStart: function (target, source) {
@@ -5594,8 +5674,13 @@ exports.BattleMovedex = {
 					for (let p in battle.sides[s].active) {
 						pokemon = battle.sides[s].active[p];
 						if (pokemon.isGrounded() && !pokemon.isSemiInvulnerable()) {
-							this.debug('Pokemon is grounded, healing through Grassy Terrain.');
-							this.heal(pokemon.maxhp / 16, pokemon, pokemon);
+							if (this.isWeather(['sunnyday','raindance','primordialsea','desolateland']) && pokemon.hasType('Grass')){
+								this.debug('Pokemon is grounded and Grass type in rain/sun, healing through Grassy Terrain.')
+								this.heal(pokemon.maxhp / 8, pokemon, pokemon);
+							} else {
+								this.debug('PokÃ©mon is grounded, healing through Grassy Terrain.');
+								this.heal(pokemon.maxhp / 16, pokemon, pokemon);
+							}
 						}
 					}
 				}
@@ -6821,7 +6906,7 @@ exports.BattleMovedex = {
 		name: "Horn Attack",
 		pp: 25,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		secondary: false,
 		target: "normal",
 		type: "Normal",
@@ -6857,7 +6942,7 @@ exports.BattleMovedex = {
 		name: "Horn Leech",
 		pp: 10,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1, heal: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, heal: 1, sword: 1},
 		drain: [1, 2],
 		secondary: false,
 		target: "normal",
@@ -7279,7 +7364,7 @@ exports.BattleMovedex = {
 		name: "Icicle Spear",
 		pp: 30,
 		priority: 0,
-		flags: {protect: 1, mirror: 1},
+		flags: {protect: 1, mirror: 1, sword: 1},
 		multihit: [2, 5],
 		secondary: false,
 		target: "normal",
@@ -7648,6 +7733,10 @@ exports.BattleMovedex = {
 			onTryHitPriority: 3,
 			onTryHit: function (target, source, move) {
 				if (!move.flags['protect'] || move.category === 'Status') return;
+				if(source.ability === 'permeate'){
+					source.addVolatile('permeate');
+					return;
+				}
 				this.add('-activate', target, 'Protect');
 				let lockedmove = source.getVolatile('lockedmove');
 				if (lockedmove) {
@@ -7780,7 +7869,7 @@ exports.BattleMovedex = {
 		name: "Leaf Blade",
 		pp: 15,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		critRatio: 2,
 		secondary: false,
 		target: "normal",
@@ -7976,11 +8065,16 @@ exports.BattleMovedex = {
 			},
 			onAnyModifyDamage: function (damage, source, target, move) {
 				if (target !== source && target.side === this.effectData.target && this.getCategory(move) === 'Special') {
-					if (!move.crit && !move.infiltrates) {
+					if (!move.crit && !move.infiltrates && source.ability !== 'permeate') {
 						this.debug('Light Screen weaken');
 						if (target.side.active.length > 1) return this.chainModify([0xA8F, 0x1000]);
 						return this.chainModify(0.5);
 					}
+				}
+			},
+			onFoeBeforeMove: function(attacker, defender, move){
+				if(attacker.ability === 'permeate'){
+					attacker.addVolatile('permeate');
 				}
 			},
 			onStart: function (side) {
@@ -8476,6 +8570,65 @@ exports.BattleMovedex = {
 		type: "Ground",
 		contestType: "Tough",
 	},
+	"marshyterrain": {
+		num: 702,
+		accuracy: true,
+		basePower: 0,
+		category: "Status",
+		desc: "For five turns, non Poison, Dark, Steel, and Ghost-type Pokemon on the ground lose 1/16 of their HP each turn if it isn't raining. Poison and Dark-type moves are powered up by 50%.",
+		shortDesc: "If on ground and no rain, lose HP + Poison and Dark moves stronger.",
+		id: "marshyterrain",
+		name: "Marshy Terrain",
+		pp: 10,
+		priority: 0,
+		terrain: 'marshyterrain',
+		isViable: true,
+		flags: {nonsky: 1},
+		effect: {
+			duration: 5,
+			durationCallback: function(target, source, effect) {
+			if (source && source.ability === 'terraformer') {
+					return 5;
+				}
+				return 5;
+			},
+			onBasePower: function(basePower, attacker, defender, move) {
+				if (move.type === 'Poison' || move.type === 'Dark' && attacker.runImmunity('Ground')) {
+					this.debug('marshy terrain boost');
+					return this.chainModify(1.5);
+				}
+			},
+			onSetStatus: function(status, target, source, effect) {
+				if (status.id === 'brn' && target.runImmunity('Ground')) {
+					this.debug('Interrupting burn from Marshy Terrain');
+					return false;
+				}
+			},
+			onStart: function(target, source) {
+				this.add('-fieldstart', 'move: Marshy Terrain');
+			},
+			onResidualOrder: 5,
+			onResidualSubOrder: 2,
+			onResidual: function(battle) {
+				this.debug('onResidual battle');
+				for (var s in battle.sides) {
+					for (var p in battle.sides[s].active) {
+						var pokemon = battle.sides[s].active[p];
+						if (pokemon.runImmunity('Ground') && !this.isWeather('raindance') && (!pokemon.hasType('Poison') && !pokemon.hasType('Dark') && !pokemon.hasType('Steel') && !pokemon.hasType('Ghost'))) {
+							this.debug('Pokémon is grounded, damage through Marshy Terrain.');
+							this.damage(pokemon.maxhp / 16, pokemon, pokemon);
+						}
+					}
+				}
+			},
+			onEnd: function() {
+				this.add('-fieldend', 'move: Marshy Terrain');
+			}
+		},
+		secondary: false,
+		target: "all",
+		type: "Poison"
+	},
 	"matblock": {
 		num: 561,
 		accuracy: true,
@@ -8505,6 +8658,10 @@ exports.BattleMovedex = {
 			onTryHit: function (target, source, move) {
 				if (!move.flags['protect']) return;
 				if (move && (move.target === 'self' || move.category === 'Status')) return;
+				if(source.ability === 'permeate'){
+					source.addVolatile('permeate');
+					return;
+				}
 				this.add('-activate', target, 'Mat Block', move.name);
 				let lockedmove = source.getVolatile('lockedmove');
 				if (lockedmove) {
@@ -8666,7 +8823,7 @@ exports.BattleMovedex = {
 		name: "Megahorn",
 		pp: 10,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		secondary: false,
 		target: "normal",
 		type: "Bug",
@@ -8754,7 +8911,7 @@ exports.BattleMovedex = {
 		name: "Metal Claw",
 		pp: 35,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		secondary: {
 			chance: 10,
 			self: {
@@ -9178,10 +9335,20 @@ exports.BattleMovedex = {
 				this.debug('misty terrain preventing status');
 				return false;
 			},
+			onAccuracy: function(accuracy, target) {
+				if (typeof accuracy !== 'number') return;
+				if (!this.isWeather('sunnyday') && target && target.hasType('Fairy')) {
+					this.debug('Misty Terrain - decreasing accuracy');
+					return accuracy * 0.9;
+				}
+			},
 			onBasePower: function (basePower, attacker, defender, move) {
 				if (move.type === 'Dragon' && defender.isGrounded() && !defender.isSemiInvulnerable()) {
 					this.debug('misty terrain weaken');
 					return this.chainModify(0.5);
+				} else if (move.type === 'Ghost' && attacker.isGrounded() && !attacker.isSemiInvulnerable()){
+					this.debug('misty terrain strengthen');
+					return this.chainModify(1.5);
 				}
 			},
 			onStart: function (side) {
@@ -9593,7 +9760,7 @@ exports.BattleMovedex = {
 		name: "Night Slash",
 		pp: 15,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		critRatio: 2,
 		secondary: false,
 		target: "normal",
@@ -10110,7 +10277,7 @@ exports.BattleMovedex = {
 		name: "Pin Missile",
 		pp: 20,
 		priority: 0,
-		flags: {protect: 1, mirror: 1},
+		flags: {protect: 1, mirror: 1, sword: 1},
 		multihit: [2, 5],
 		secondary: false,
 		target: "normal",
@@ -10280,7 +10447,7 @@ exports.BattleMovedex = {
 		name: "Poison Sting",
 		pp: 35,
 		priority: 0,
-		flags: {protect: 1, mirror: 1},
+		flags: {protect: 1, mirror: 1, sword: 1},
 		secondary: {
 			chance: 30,
 			status: 'psn',
@@ -10620,6 +10787,10 @@ exports.BattleMovedex = {
 			onTryHitPriority: 3,
 			onTryHit: function (target, source, move) {
 				if (!move.flags['protect']) return;
+				if(source.ability === 'permeate'){
+					source.addVolatile('permeate');
+					return;
+				}
 				this.add('-activate', target, 'Protect');
 				let lockedmove = source.getVolatile('lockedmove');
 				if (lockedmove) {
@@ -10739,7 +10910,7 @@ exports.BattleMovedex = {
 		name: "Psycho Cut",
 		pp: 20,
 		priority: 0,
-		flags: {protect: 1, mirror: 1},
+		flags: {protect: 1, mirror: 1, sword: 1},
 		critRatio: 2,
 		secondary: false,
 		target: "normal",
@@ -10995,6 +11166,10 @@ exports.BattleMovedex = {
 				if (effect && (effect.id === 'feint' || effect.priority <= 0 || effect.target === 'self')) {
 					return;
 				}
+				if(source.ability === 'permeate'){
+					source.addVolatile('permeate');
+					return;
+				}
 				this.add('-activate', target, 'Quick Guard');
 				let lockedmove = source.getVolatile('lockedmove');
 				if (lockedmove) {
@@ -11163,7 +11338,7 @@ exports.BattleMovedex = {
 		name: "Razor Leaf",
 		pp: 25,
 		priority: 0,
-		flags: {protect: 1, mirror: 1},
+		flags: {protect: 1, mirror: 1, sword: 1},
 		critRatio: 2,
 		secondary: false,
 		target: "allAdjacentFoes",
@@ -11182,7 +11357,7 @@ exports.BattleMovedex = {
 		name: "Razor Shell",
 		pp: 10,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		secondary: {
 			chance: 50,
 			boosts: {
@@ -11204,7 +11379,7 @@ exports.BattleMovedex = {
 		name: "Razor Wind",
 		pp: 10,
 		priority: 0,
-		flags: {charge: 1, protect: 1, mirror: 1},
+		flags: {charge: 1, protect: 1, mirror: 1, sword: 1},
 		onTry: function (attacker, defender, move) {
 			if (attacker.volatiles['twoturnmove']) {
 				if (attacker.volatiles['twoturnmove'].duration === 2) return null;
@@ -11294,11 +11469,16 @@ exports.BattleMovedex = {
 			},
 			onAnyModifyDamage: function (damage, source, target, move) {
 				if (target !== source && target.side === this.effectData.target && this.getCategory(move) === 'Physical') {
-					if (!move.crit && !move.infiltrates) {
+					if (!move.crit && !move.infiltrates && source.ability !== 'permeate') {
 						this.debug('Reflect weaken');
 						if (target.side.active.length > 1) return this.chainModify([0xA8F, 0x1000]);
 						return this.chainModify(0.5);
 					}
+				}
+			},
+			onFoeBeforeMove: function(attacker, defender, move){
+				if(attacker.ability === 'permeate'){
+					attacker.addVolatile('permeate');
 				}
 			},
 			onStart: function (side) {
@@ -11923,6 +12103,54 @@ exports.BattleMovedex = {
 		type: "Normal",
 		contestType: "Beautiful",
 	},
+	"royalterrain": {
+		num: 703,
+		accuracy: true,
+		basePower: 0,
+		category: "Status",
+		desc: "For five turns, Dragon and Fighting type Pokemon on the ground neglect damage from weather. Dragon and Fighting-type moves are powered up by 50%. Grounded Pokemon cannot be statused.",
+		shortDesc: "If on ground, Dragon and Fighting moves stronger + no damage from weather.",
+		id: "royalterrain",
+		name: "Royal Terrain",
+		pp: 10,
+		priority: 0,
+		terrain: 'royalterrain',
+		isViable: true,
+		flags: {nonsky: 1},
+		effect: {
+			duration: 5,
+			durationCallback: function(target, source, effect) {
+			if (source && source.ability === 'terraformer') {
+					return 5;
+				}
+				return 5;
+			},
+			onBasePower: function(basePower, attacker, defender, move) {
+				if ((move.type === 'Dragon' || move.type === 'Fighting') && attacker.runImmunity('Ground')) {
+					this.debug('royal terrain boost');
+					return this.chainModify(1.5);
+				}
+			},
+			onSetStatus: function(status, target, source, effect) {
+				if (target.runImmunity('Ground')) {
+					this.debug('Interrupting status from Royal Terrain');
+					return false;
+				}
+			},
+			onStart: function(target, source) {
+				this.add('-fieldstart', 'move: Royal Terrain');
+			},
+			onImmunity: function(type, pokemon) {
+				if ((type === 'sandstorm' || type === 'hail') && (pokemon.hasType('Dragon') || pokemon.hasType('Fighting'))) return false;
+			},
+			onEnd: function() {
+				this.add('-fieldend', 'move: Royal Terrain');
+			}
+		},
+		secondary: false,
+		target: "all",
+		type: "Dragon"
+	},
 	"sacredfire": {
 		num: 221,
 		accuracy: 95,
@@ -11956,7 +12184,7 @@ exports.BattleMovedex = {
 		name: "Sacred Sword",
 		pp: 15,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		ignoreEvasion: true,
 		ignoreDefensive: true,
 		secondary: false,
@@ -11986,19 +12214,19 @@ exports.BattleMovedex = {
 				return 5;
 			},
 			onSetStatus: function (status, target, source, effect) {
-				if (source && target !== source && effect && (!effect.infiltrates || target.side === source.side)) {
+				if (source && target !== source && effect && (!effect.infiltrates || target.side === source.side || source.ability !== 'permeate')) {
 					this.debug('interrupting setStatus');
 					return false;
 				}
 			},
 			onTryConfusion: function (target, source, effect) {
-				if (source && target !== source && effect && (!effect.infiltrates || target.side === source.side)) {
+				if (source && target !== source && effect && (!effect.infiltrates || target.side === source.side || source.ability !== 'permeate')) {
 					this.debug('interrupting addVolatile');
 					return false;
 				}
 			},
 			onTryHit: function (target, source, move) {
-				if (move && move.id === 'yawn' && target !== source && (!move.infiltrates || target.side === source.side)) {
+				if (move && move.id === 'yawn' && target !== source && (!move.infiltrates || target.side === source.side || source.ability !== 'permeate')) {
 					this.debug('blocking yawn');
 					return false;
 				}
@@ -12227,7 +12455,7 @@ exports.BattleMovedex = {
 		name: "Secret Sword",
 		pp: 10,
 		priority: 0,
-		flags: {protect: 1, mirror: 1},
+		flags: {protect: 1, mirror: 1, sword: 1},
 		secondary: false,
 		target: "normal",
 		type: "Fighting",
@@ -12346,7 +12574,7 @@ exports.BattleMovedex = {
 		name: "Shadow Claw",
 		pp: 15,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		critRatio: 2,
 		secondary: false,
 		target: "normal",
@@ -12945,7 +13173,7 @@ exports.BattleMovedex = {
 		name: "Slash",
 		pp: 20,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		critRatio: 2,
 		secondary: false,
 		target: "normal",
@@ -13078,6 +13306,76 @@ exports.BattleMovedex = {
 		target: "allAdjacent",
 		type: "Poison",
 		contestType: "Tough",
+	},
+	"slushyterrain": {
+		num: 701,
+		accuracy: true,
+		basePower: 0,
+		category: "Status",
+		desc: "For five turns, Pokemon on the ground cannot be burned. Their Ice and Water-type moves are powered up by 50%. In Rain and Hail, Ice-types gain 1/16 HP each turn, and in Rain only, Water-types gain 1/16 HP each turn. Sun removes the terrain.",
+		shortDesc: "If on ground and Water/Ice type, gain HP + Ice and Water moves stronger.",
+		id: "slushyterrain",
+		name: "Slushy Terrain",
+		pp: 10,
+		priority: 0,
+		terrain: 'slushyterrain',
+		isViable: true,
+		flags: {nonsky: 1},
+		effect: {
+			duration: 5,
+			durationCallback: function(target, source, effect) {
+			if (source && source.ability === 'terraformer') {
+					return 5
+					;
+				}
+				return 5;
+			},
+			onBasePower: function(basePower, attacker, defender, move) {
+				if ((move.type === 'Ice' || move.type === 'Water') && attacker.runImmunity('Ground')) {
+					this.debug('slushy terrain boost');
+					return this.chainModify(1.5);
+				}
+			},
+			onSetStatus: function(status, target, source, effect) {
+				if (status.id === 'brn' && target.runImmunity('Ground')) {
+					this.debug('Interrupting burn from Slushy Terrain');
+					return false;
+				}
+			},
+			onStart: function(target, source) {
+				this.add('-fieldstart', 'move: Slushy Terrain');
+			},
+			onUpdate: function(pokemon){
+				if (this.isWeather('sunnyday')){
+					this.clearTerrain();
+				}
+			},
+			onResidualOrder: 5,
+			onResidualSubOrder: 2,
+			onResidual: function(battle) {
+				this.debug('onResidual battle');
+				for (var s in battle.sides) {
+					for (var p in battle.sides[s].active) {
+						var pokemon = battle.sides[s].active[p];
+						if (pokemon.runImmunity('Ground')) {
+							if (pokemon.hasType('Ice') && this.isWeather(['hail','raindance'])) {
+								this.debug('Pokémon is grounded and ice type in rain or hail, heal through Slushy Terrain.');
+								this.heal(pokemon.maxhp / 16, pokemon, pokemon);
+							} else if (pokemon.hasType('Water') && this.isWeather('raindance')) {
+								this.debug('Pokémon is grounded and water type in rain, heal through Slushy Terrain.');
+								this.heal(pokemon.maxhp / 16, pokemon, pokemon);
+							}
+						}
+					}
+				}
+			},
+			onEnd: function() {
+				this.add('-fieldend', 'move: Slushy Terrain');
+			}
+		},
+		secondary: false,
+		target: "all",
+		type: "Ice"
 	},
 	"smackdown": {
 		num: 479,
@@ -13300,6 +13598,10 @@ exports.BattleMovedex = {
 			onTryHitPriority: 3,
 			onTryHit: function (target, source, move) {
 				if (!move.flags['protect']) return;
+				if(source.ability === 'permeate'){
+					source.addVolatile('permeate');
+					return;
+				}
 				this.add('-activate', target, 'Protect');
 				let lockedmove = source.getVolatile('lockedmove');
 				if (lockedmove) {
@@ -13689,7 +13991,7 @@ exports.BattleMovedex = {
 		name: "Steel Wing",
 		pp: 25,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		secondary: {
 			chance: 10,
 			self: {
@@ -14035,6 +14337,10 @@ exports.BattleMovedex = {
 			onTryPrimaryHitPriority: -1,
 			onTryPrimaryHit: function (target, source, move) {
 				if (target === source || move.flags['authentic'] || move.infiltrates) {
+					return;
+				}
+				if(source.ability === 'permeate'){
+					source.addVolatile('permeate');
 					return;
 				}
 				let damage = this.getDamage(source, target, move);
@@ -15310,7 +15616,7 @@ exports.BattleMovedex = {
 		name: "Twineedle",
 		pp: 20,
 		priority: 0,
-		flags: {protect: 1, mirror: 1},
+		flags: {protect: 1, mirror: 1, sword: 1},
 		multihit: [2, 2],
 		secondary: {
 			chance: 20,
@@ -15455,7 +15761,7 @@ exports.BattleMovedex = {
 		name: "Vacuum Wave",
 		pp: 30,
 		priority: 1,
-		flags: {protect: 1, mirror: 1},
+		flags: {protect: 1, mirror: 1, sword: 1},
 		secondary: false,
 		target: "normal",
 		type: "Fighting",
@@ -15937,6 +16243,10 @@ exports.BattleMovedex = {
 				if (effect && (effect.category === 'Status' || (effect.target !== 'allAdjacent' && effect.target !== 'allAdjacentFoes'))) {
 					return;
 				}
+				if(source.ability === 'permeate'){
+					source.addVolatile('permeate');
+					return;
+				}
 				this.add('-activate', target, 'Wide Guard');
 				let lockedmove = source.getVolatile('lockedmove');
 				if (lockedmove) {
@@ -16226,7 +16536,7 @@ exports.BattleMovedex = {
 		name: "X-Scissor",
 		pp: 15,
 		priority: 0,
-		flags: {contact: 1, protect: 1, mirror: 1},
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
 		secondary: false,
 		target: "normal",
 		type: "Bug",
@@ -16392,5 +16702,606 @@ exports.BattleMovedex = {
 		target: "normal",
 		type: "Water",
 		contestType: "Cute",
+	},
+	"jolt": {
+		num: 650,
+		accuracy: 100,
+		basePower: 50,
+		category: "Special",
+		desc: "Deals damage to one adjacent target. Priority +2.",
+		shortDesc: "Nearly always goes first.",
+		id: "jolt",
+		isViable: true,
+		name: "Jolt",
+		pp: 20,
+		priority: 2,
+		secondary: false,
+		flags: {protect: 1, mirror: 1},
+		target: "normal",
+		type: "Electric"
+	},
+	"dragoon": {
+		num: 651,
+		accuracy: 100,
+		basePower: 60,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target. Makes contact. Priority +2.",
+		shortDesc: "Utterly destroys the target at Mach 4.",
+		id: "dragoon",
+		isViable: true,
+		name: "Dragoon",
+		pp: 10,
+		priority: 2,
+		isContact: true,
+		secondary: false,
+		flags: {contact: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Dragon"
+	},
+	"tangle": {
+		num: 652,
+		accuracy: 90,
+		basePower: 60,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target. Flinches. Priority +1.",
+		shortDesc: "Usually goes first. 5% chance to flinch.",
+		id: "tangle",
+		isViable: true,
+		name: "Tangle",
+		pp: 10,
+		priority: 1,
+		secondary: {
+			chance: 5,
+			volatileStatus: 'flinch',
+		},
+		flags: {contact: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Grass"
+	},
+	"cast": {
+		num: 653,
+		accuracy: 100,
+		basePower: 50,
+		category: "Special",
+		desc: "Deals damage to one adjacent target. Priority +2.",
+		shortDesc: "Nearly always goes first.",
+		id: "cast",
+		isViable: true,
+		name: "Cast",
+		pp: 20,
+		priority: 2,
+		secondary: false,
+		flags: {protect: 1, mirror: 1},
+		target: "normal",
+		type: "Psychic"
+	},
+	"glitter": {
+		num: 654,
+		accuracy: 100,
+		basePower: 40,
+		category: "Special",
+		desc: "Deals damage to one adjacent target. Priority +1.",
+		shortDesc: "Usually goes first.",
+		id: "glitter",
+		isViable: true,
+		name: "Glitter",
+		pp: 10,
+		priority: 1,
+		isContact: true,
+		secondary: {
+			chance: 5,
+			volatileStatus: 'confusion',
+		},
+		flags: {protect: 1, mirror: 1},
+		target: "normal",
+		type: "Fairy"
+	},
+	"skewer": {
+		num: 655,
+		accuracy: 100,
+		basePower: 60,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target. Makes contact. Priority +2.",
+		shortDesc: "Nearly always goes first.",
+		id: "skewer",
+		isViable: true,
+		name: "Skewer",
+		pp: 20,
+		priority: 2,
+		isContact: true,
+		secondary: false,
+		flags: {contact: 1, protect: 1, mirror: 1, sword: 1},
+		target: "normal",
+		type: "Bug"
+	},
+	"rockit": {
+		num: 656,
+		accuracy: 100,
+		basePower: 50,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target. Makes contact. Priority +1.",
+		shortDesc: "Usually goes first.",
+		id: "rockit",
+		isViable: true,
+		name: "Rock it",
+		pp: 20,
+		priority: 1,
+		isPunchAttack: true,
+		isContact: true,
+		secondary: false,
+		flags: {contact: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Rock"
+	},
+	"blight": {
+		num: 657,
+		accuracy: 90,
+		basePower: 40,
+		category: "Special",
+		desc: "Deals damage to one adjacent target. Poisons. Priority +1.",
+		shortDesc: "Usually goes first. 5% chance to poison.",
+		id: "blight",
+		isViable: true,
+		name: "Blight",
+		pp: 10,
+		priority: 1,
+		secondary: {
+			chance: 5,
+			volatileStatus: 'psn',
+		},
+		flags: {protect: 1, mirror: 1},
+		target: "normal",
+		type: "Poison"
+	},
+	"quake": {
+		num: 658,
+		accuracy: 100,
+		basePower: 50,
+		category: "Special",
+		desc: "Deals damage to one adjacent target. Priority +1.",
+		shortDesc: "Usually goes first.",
+		id: "quake",
+		isViable: true,
+		name: "Quake",
+		pp: 10,
+		priority: 1,
+		secondary: false,
+		flags: {protect: 1, mirror: 1},
+		target: "normal",
+		type: "Ground"
+	},
+	"flare": {
+		num: 659,
+		accuracy: 95,
+		basePower: 40,
+		category: "Special",
+		desc: "Deals damage to one adjacent target. Burns. Priority +1.",
+		shortDesc: "Usually goes first. 5% chance to burn.",
+		id: "flare",
+		isViable: true,
+		name: "Flare",
+		pp: 20,
+		priority: 1,
+		secondary: {
+			chance: 5,
+			volatileStatus: 'brn',
+		},
+		flags: {protect: 1, mirror: 1},
+		target: "normal",
+		type: "Fire"
+	},
+	"plummet": {
+		num: 660,
+		accuracy: 90,
+		basePower: 50,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target. Makes contact. Priority +2.",
+		shortDesc: "Nearly always goes first.",
+		id: "plummet",
+		isViable: true,
+		name: "Plummet",
+		pp: 10,
+		priority: 2,
+		isContact: true,
+		effect: {
+			duration: 1,
+			onStart: function(pokemon) {
+				for (var i=0, l=pokemon.typesData.length; i<l; i++) {
+					if (pokemon.typesData[i].type === 'Flying') {
+						pokemon.typesData[i].suppressed = true;
+						break;
+					}
+				}
+			},
+			onModifyPokemon: function(pokemon) {
+				for (var i=0, l=pokemon.typesData.length; i<l; i++) {
+					if (pokemon.typesData[i].type === 'Flying') {
+						pokemon.typesData[i].suppressed = true;
+						break;
+					}
+				}
+			},
+			onEnd: function(pokemon) {
+				for (var i=0, l=pokemon.typesData.length; i<l; i++) {
+					if (pokemon.typesData[i].type === 'Flying') {
+						pokemon.typesData[i].suppressed = false;
+						break;
+					}
+				}
+			}
+		},
+		flags: {contact: 1, protect: 1, mirror: 1},
+		secondary: false,
+		target: "normal",
+		type: "Flying"
+	},
+	"scapegoat": {
+		num: 661,
+		accuracy: 100,
+		basePower: 70,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target. If this move is successful and the user has not fainted, the user switches out even if it is trapped and is replaced immediately by another party member. The user does not switch out if there are no unfainted party members, or if the target switched out using an Eject Button. Makes contact.",
+		shortDesc: "User switches out after damaging the target.",
+		id: "scapegoat",
+		isViable: true,
+		name: "Scapegoat",
+		pp: 20,
+		priority: 0,
+		isContact: true,
+		selfSwitch: true,
+		secondary: false,
+		flags: {contact: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Dark"
+	},
+	"boomerang": {
+		num: 662,
+		accuracy: 100,
+		basePower: 70,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target. If this move is successful and the user has not fainted, the user switches out even if it is trapped and is replaced immediately by another party member. The user does not switch out if there are no unfainted party members, or if the target switched out using an Eject Button. Makes contact.",
+		shortDesc: "User switches out after damaging the target.",
+		id: "boomerang",
+		isViable: true,
+		name: "Boomerang",
+		pp: 20,
+		priority: 0,
+		isContact: true,
+		selfSwitch: true,
+		secondary: false,
+		flags: {contact: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Flying"
+	},
+	"dragonfang": {
+		num: 663,
+		accuracy: 95,
+		basePower: 65,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target with a 20% chance to flinch it. Makes contact.",
+		shortDesc: "20% chance to flinch.",
+		id: "dragonfang",
+		isViable: true,
+		name: "Dragon Fang",
+		pp: 15,
+		priority: 0,
+		isContact: true,
+		isBiteAttack: true,
+		secondary: {
+				chance: 20,
+				volatileStatus: 'flinch'
+		},
+		flags: {bite: 1, contact: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Dragon"
+	},
+	"eternalhaunting": {
+		num: 664,
+		accuracy: true,
+		basePower: 20,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target and hits two to five times. Has a 1/3 chance to hit two or three times, and a 1/6 chance to hit four or five times. If one of the hits breaks the target's Substitute, it will take damage for the remaining hits. If the user has the Ability Skill Link, this move will always hit five times. Goes through protect.",
+		shortDesc: "Hits 2-5 times in one turn.",
+		id: "eternalhaunting",
+		name: "Eternal Haunting",
+		pp: 10,
+		priority: 0,
+		isViable: true,
+		multihit: [2,5],
+		secondary: false,
+		flags: {mirror: 1},
+		target: "normal",
+		type: "Ghost"
+	},
+	"flutter": {
+		num: 665,
+		accuracy: 95,
+		basePower: 25,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target and hits two to five times. Has a 1/3 chance to hit two or three times, and a 1/6 chance to hit four or five times. If one of the hits breaks the target's Substitute, it will take damage for the remaining hits. If the user has the Ability Skill Link, this move will always hit five times.",
+		shortDesc: "Hits 2-5 times in one turn.",
+		id: "flutter",
+		name: "Flutter",
+		pp: 20,
+		priority: 0,
+		isViable: true,
+		multihit: [2,5],
+		isContact: true,
+		secondary: false,
+		flags: {contact: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Fairy"
+	},
+	"swoopingdive": {
+		num: 666,
+		accuracy: 90,
+		basePower: 25,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target and hits two to five times. Has a 1/3 chance to hit two or three times, and a 1/6 chance to hit four or five times. If one of the hits breaks the target's Substitute, it will take damage for the remaining hits. If the user has the Ability Skill Link, this move will always hit five times.",
+		shortDesc: "Hits 2-5 times in one turn.",
+		id: "swoopingdive",
+		name: "Swooping Dive",
+		pp: 25,
+		priority: 0,
+		isViable: true,
+		multihit: [2,5],
+		isContact: true,
+		secondary: false,
+		flags: {contact: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Flying"
+	},
+	"fireworks": {
+		num: 667,
+		accuracy: 85,
+		basePower: 20,
+		basePowerCallback: function(pokemon, target, move) {
+			pokemon.addVolatile('fireworks');
+			if (pokemon.volatiles['fireworks'].hit == 1){
+				this.debug("removing secondaries");
+				move.secondaries = false;
+			}
+			return 20;
+		},
+		category: "Physical",
+		desc: "Deals damage to one adjacent target and hits two to five times. Has a 1/3 chance to hit two or three times, and a 1/6 chance to hit four or five times. If one of the hits breaks the target's Substitute, it will take damage for the remaining hits. If the user has the Ability Skill Link, this move will always hit five times.",
+		shortDesc: "Hits 2-5 times in one turn. Each subsequent hit can burn.",
+		id: "fireworks",
+		name: "Fireworks",
+		pp: 20,
+		priority: 0,
+		isViable: true,
+		multihit: [2,5],
+		secondary: {
+			chance: 5,
+			status: 'brn'
+		},
+		effect: {
+			duration: 1,
+			onStart: function() {
+				this.effectData.hit = 1;
+			},
+			onRestart: function() {
+				this.effectData.hit++;
+			}
+		},
+		secondary: {
+			chance: 5,
+			status: 'brn'
+		},
+		flags: {bullet: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Fire"
+	},
+	"venommortar": {
+		num: 668,
+		accuracy: 85,
+		basePower: 30,
+		category: "Physical",
+		desc: "Deals damage to one adjacent target and hits three times. Has a 5% chance to poison on each hit.",
+		shortDesc: "Hits 3 times. Each hit can miss, but can poison.",
+		id: "venommortar",
+		name: "Venom Mortar",
+		pp: 10,
+		priority: 0,
+		isViable: true,
+		multihit: [3,3],
+		secondary: {
+			chance: 5,
+			status: 'psn'
+		},
+		flags: {bullet: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Poison"
+	},
+	"shadowgrenades": {
+		num: 669,
+		accuracy: 90,
+		basePower: 20,
+		basePowerCallback: function(pokemon, target, move) {
+			pokemon.addVolatile('shadowgrenades');
+			if (pokemon.volatiles['shadowgrenades'].hit == 5){
+				if (!move.secondaries) {
+					move.secondaries = [];
+				}
+				this.debug("adding secondaries");
+				move.secondaries.push({
+					chance: 50,
+					status: 'slp'
+				});
+			}
+			return 20;
+		},
+		category: "Physical",
+		desc: "Deals damage to one adjacent target and hits two to five times. Has a 1/3 chance to hit two or three times, and a 1/6 chance to hit four or five times. If one of the hits breaks the target's Substitute, it will take damage for the remaining hits. If the user has the Ability Skill Link, this move will always hit five times. The final hit has a 50% chance to put the target to sleep.",
+		shortDesc: "Hits 2-5 times in one turn. 5th hit can put the target to sleep.",
+		id: "shadowgrenades",
+		name: "Shadow Grenades",
+		pp: 10,
+		priority: 0,
+		isViable: true,
+		multihit: [2,5],
+		secondary: false,
+		effect: {
+			duration: 1,
+			onStart: function() {
+				this.effectData.hit = 1;
+			},
+			onRestart: function() {
+				this.effectData.hit++;
+			}
+		},
+		flags: {bullet: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Dark"
+	},
+	"machineburst": {
+		num: 670,
+		accuracy: 80,
+		basePower: 30,
+		basePowerCallback: function(pokemon) {
+			pokemon.addVolatile('machineburst');
+			return 10 * pokemon.volatiles['machineburst'].hit + 20;
+		},
+		category: "Physical",
+		desc: "Deals damage to one adjacent target and hits three times. The base power increases to 40 for the second hit and 50 for the third. If any of the hits misses the target, the attack ends. If one of the hits breaks the target's Substitute, it will take damage for the remaining hits.",
+		shortDesc: "Hits 3 times. Each hit can miss, but power rises.",
+		id: "machineburst",
+		name: "Machine Burst",
+		pp: 20,
+		priority: 0,
+		isViable: true,
+		multihit: [3,3],
+		effect: {
+			duration: 1,
+			onStart: function() {
+				this.effectData.hit = 1;
+			},
+			onRestart: function() {
+				this.effectData.hit++;
+			}
+		},
+		secondary: false,
+		flags: {bullet: 1, protect: 1, mirror: 1},
+		target: "normal",
+		type: "Steel"
+	},
+	"psyspike": {
+		num: 671,
+		accuracy: 95,
+		basePower: 20,
+		basePowerCallback: function(pokemon, target, move) {
+			pokemon.addVolatile('psyspike');
+			if (pokemon.volatiles['psyspike'].hit == 5){
+				if (!move.secondaries) {
+					move.secondaries = [];
+				}
+				this.debug("adding secondaries");
+				move.secondaries.push({
+					chance: 50,
+					status: 'confusion'
+				});
+			}
+			return 20;
+		},
+		category: "Physical",
+		desc: "Deals damage to one adjacent target and hits two to five times. Has a 1/3 chance to hit two or three times, and a 1/6 chance to hit four or five times. If one of the hits breaks the target's Substitute, it will take damage for the remaining hits. If the user has the Ability Skill Link, this move will always hit five times. The last hit has a 50% chance to confuse.",
+		shortDesc: "Hits 2-5 times in one turn. 5th hit can confuse.",
+		id: "psyspike",
+		name: "Psyspike",
+		pp: 15,
+		priority: 0,
+		isViable: true,
+		multihit: [2,5],
+		secondary: false,
+		effect: {
+			duration: 1,
+			onStart: function() {
+				this.effectData.hit = 1;
+			},
+			onRestart: function() {
+				this.effectData.hit++;
+			}
+		},
+		flags: {protect: 1, mirror: 1, sword: 1},
+		target: "normal",
+		type: "Psychic"
+	},
+	"sparklerburns": {
+		num: 672,
+		accuracy: 95,
+		basePower: 20,
+		basePowerCallback: function(pokemon, target, move) {
+			pokemon.addVolatile('sparklerburns');
+			if (pokemon.volatiles['sparklerburns'].hit == 5){
+				if (!move.secondaries) {
+					move.secondaries = [];
+				}
+				this.debug("adding secondaries");
+				move.secondaries.push({
+					chance: 50,
+					status: 'par'
+				});
+			}
+			return 20;
+		},
+		category: "Physical",
+		desc: "Deals damage to one adjacent target and hits two to five times. Has a 1/3 chance to hit two or three times, and a 1/6 chance to hit four or five times. If one of the hits breaks the target's Substitute, it will take damage for the remaining hits. If the user has the Ability Skill Link, this move will always hit five times. The last hit has a 50% chance to paralyze.",
+		shortDesc: "Hits 2-5 times in one turn. 5th hit can paralyze.",
+		id: "sparklerburns",
+		name: "Sparkler Burns",
+		pp: 30,
+		priority: 0,
+		isViable: true,
+		multihit: [2,5],
+		secondary: false,
+		effect: {
+			duration: 1,
+			onStart: function() {
+				this.effectData.hit = 1;
+			},
+			onRestart: function() {
+				this.effectData.hit++;
+			}
+		},
+		flags: {protect: 1, mirror: 1},
+		target: "normal",
+		type: "Electric"
+	},
+	"riptide": {
+		num: 673,
+		accuracy: 100,
+		basePower: 70,
+		category: "Special",
+		desc: "Deals damage to one adjacent target. If this move is successful and the user has not fainted, the user switches out even if it is trapped and is replaced immediately by another party member. The user does not switch out if there are no unfainted party members, or if the target switched out using an Eject Button.",
+		shortDesc: "User switches out after damaging the target.",
+		id: "riptide",
+		isViable: true,
+		name: "Riptide",
+		pp: 20,
+		priority: 0,
+		selfSwitch: true,
+		secondary: false,
+		flags: {protect: 1, mirror: 1},
+		target: "normal",
+		type: "Water"
+	},
+	"aprilfools": {
+		num: 674,
+		accuracy: 100,
+		basePower: 70,
+		category: "Special",
+		desc: "Deals damage to one adjacent target. If this move is successful and the user has not fainted, the user switches out even if it is trapped and is replaced immediately by another party member. The user does not switch out if there are no unfainted party members, or if the target switched out using an Eject Button.",
+		shortDesc: "User switches out after damaging the target.",
+		id: "aprilfools",
+		isViable: true,
+		name: "April Fools",
+		pp: 20,
+		priority: 0,
+		selfSwitch: true,
+		secondary: false,
+		flags: {protect: 1, mirror: 1},
+		target: "normal",
+		type: "Fairy"
 	},
 };

@@ -91,13 +91,13 @@ exports.BattleAbilities = {
 		shortDesc: "Pokemon's ball and bomb moves do 1.5x damage.",
 		onBasePowerPriority: 8,
 		onBasePower: function(atk, attacker, defender, move){
-			if(move && move.isBullet && !(move.id in {focusblast:1})){
-				this.debug("Advanced Artillery Boost");
+			if(move && move.flags['bullet']){
+				this.debug("Artillery Boost");
 				return this.chainModify(1.5);
 			}
 		},
 		id: "advancedartillery",
-		name: "Advanced Artillery",
+		name: "Artillery",
 		rating: 3,
 		num: -7
 	},
@@ -138,11 +138,11 @@ exports.BattleAbilities = {
 		num: 185,
 	},
 	"aggravation": {
-		desc: "When this Pokemon's health goes below half, Attack, Special Attack, and Speed are raised by one stage each.",
-		shortDesc: "Attack, Sp. Attack, and Speed are raised when health goes below half.",
+		desc: "When this Pokemon's health goes below half, Attack and Special Attack are raised by one stage each.",
+		shortDesc: "Attack and Sp. Attack are raised when health goes below half.",
 		onAfterDamage: function(damage, target, source, move){
 			if(target.hp < target.maxhp/2 && target.hp + damage > target.maxhp/2 && target.hp > 0){
-				this.boost({atk: 1, spa:1, spe:1});
+				this.boost({atk: 1, spa:1});
 				this.add('-message', target.name + ' isn\'t taking this battle lightly anymore!');
 			}
 		},
@@ -1249,7 +1249,7 @@ exports.BattleAbilities = {
 		desc: "All contact, non Fire-type, attacks have an added 10% chance to freeze the opposing Pokemon.",
 		shortDesc: "Contact attacks have an added 10% chance to freeze.",
 		onModifyMove: function(move) {
-			if (!move || !move.isContact || move.type === 'Fire') return;
+			if (!move || !move.flags['contact'] || move.type === 'Fire') return;
 			if (!move.secondaries) {
 				move.secondaries = [];
 			}
@@ -1318,6 +1318,14 @@ exports.BattleAbilities = {
 		onModifyPriority: function (priority, pokemon, target, move) {
 			if (move && move.type === 'Flying') return priority + 1;
 		},
+		onBasePowerPriority: 8,
+		onBasePower: function(atk, attacker, defender, move){
+			if (move && move.type === 'Flying') {
+				this.debug('Gale Wings drop');
+				return this.chainModify(0.8);
+			}
+		},
+
 		id: "galewings",
 		name: "Gale Wings",
 		rating: 4.5,
@@ -1774,14 +1782,19 @@ exports.BattleAbilities = {
 		num: 103,
 	},
 	"laststand": {
-		desc: "This Pokemon will survive a fatal hit one time. If it does, Attack, Special Attack, and Speed are raised by one stage.",
+		desc: "Every time this Pokemon is switched in, it will survive a fatal hit one time. If it does, Attack, Special Attack, and Speed are raised by one stage.",
 		shortDesc: "This Pokemon can survive one fatal hit, raising its Attack, Special Attack and Speed by one stage.",
+		onStart: function (pokemon) {
+			pokemon.addVolatile['laststand'];
+		},
 		onDamage: function(damage, target, source, effect) {
 			if (effect && effect.effectType === 'Move' && damage >= target.hp) {
 				//if(Math.random()*100 < 30){
-					this.boost({atk:1, spa:1, spe:-1});
+				if(target.removeVolatile('laststand') {
+					this.boost({atk:1, spa:1, spe:1});
 					this.debug('Last Stand Boost');
 					return target.hp - 1;
+				}
 				//}
 			}
 		},
@@ -1889,13 +1902,14 @@ exports.BattleAbilities = {
 		num: 7,
 	},
 	"liquidooze": {
-		shortDesc: "This Pokemon damages those draining HP from it for as much as they would heal.",
+		shortDesc: "This Pokemon damages those draining HP from it for double as much as they would heal.",
 		id: "liquidooze",
 		onSourceTryHeal: function (damage, target, source, effect) {
 			this.debug("Heal is occurring: " + target + " <- " + source + " :: " + effect.id);
 			let canOoze = {drain: 1, leechseed: 1};
 			if (canOoze[effect.id]) {
-				this.damage(damage, null, null, null, true);
+				//this.damage(damage, null, null, null, true);
+				this.damage(damage*2, null, null, null, true);
 				return 0;
 			}
 		},
@@ -2457,7 +2471,7 @@ exports.BattleAbilities = {
 	},
 	"permeate": {
 		desc: "This Pokemon goes through all screens, subs, and protection moves with 1.5x attack, but loses 10% accuracy.",
-		shortDesc: "Pokemon's attacks go through protection with 1.5x attack and 10% accuracy.",
+		shortDesc: "Pokemon's attacks go through protection with 1.5x attack but 90% accuracy.",
 		//Must implement 'Hit through everything' in moves.js
 		onBasePowerPriority: 8,
 		onBasePower: function(atk, attacker, defender, move){
@@ -2620,7 +2634,7 @@ exports.BattleAbilities = {
 		shortDesc: "Pokemon's two turn charge moves do 1.5x damage.",
 		onBasePowerPriority: 8,
 		onBasePower: function(atk, attacker, defender, move){
-			if(move && (move.isTwoTurnMove || move.shortDesc == 'User cannot move next turn.')){
+			if(move && (move.flags['charge'])){
 				return this.chainModify(1.5);
 			}
 		},
@@ -3013,7 +3027,7 @@ exports.BattleAbilities = {
 			if (typeof accuracy !== 'number') return;
 			if (this.isWeather('sandstorm')) {
 				this.debug('Sand Veil - decreasing accuracy');
-				return accuracy * 0.8;
+				return accuracy * 0.91;
 			}
 		},
 		id: "sandveil",
@@ -3283,8 +3297,8 @@ exports.BattleAbilities = {
 		num: 97,
 	},
 	"snowcloak": {
-		desc: "If Hail is active, this Pokemon's evasiveness is multiplied by 1.25. This Pokemon takes no damage from Hail.",
-		shortDesc: "If Hail is active, this Pokemon's evasiveness is 1.25x; immunity to Hail.",
+		desc: "If Hail is active, this Pokemon's evasiveness is multiplied by 1.1. This Pokemon takes no damage from Hail.",
+		shortDesc: "If Hail is active, this Pokemon's evasiveness is 1.1x; immunity to Hail.",
 		onImmunity: function (type, pokemon) {
 			if (type === 'hail') return false;
 		},
@@ -3292,7 +3306,7 @@ exports.BattleAbilities = {
 			if (typeof accuracy !== 'number') return;
 			if (this.isWeather('hail')) {
 				this.debug('Snow Cloak - decreasing accuracy');
-				return accuracy * 0.8;
+				return accuracy * 0.9;
 			}
 		},
 		id: "snowcloak",
@@ -3322,7 +3336,7 @@ exports.BattleAbilities = {
 		},
 		onWeather: function (target, source, effect) {
 			if (effect.id === 'sunnyday' || effect.id === 'desolateland') {
-				this.damage(target.maxhp / 8, target, target);
+				this.damage(target.maxhp / 12, target, target);
 			}
 		},
 		id: "solarpower",
@@ -3418,9 +3432,9 @@ exports.BattleAbilities = {
 		num: 9,
 	},
 	"steadfast": {
-		shortDesc: "If this Pokemon flinches, its Speed is raised by 1 stage.",
+		shortDesc: "If this Pokemon flinches, its Speed is raised by 2 stages.",
 		onFlinch: function (pokemon) {
-			this.boost({spe: 1});
+			this.boost({spe: 2});
 		},
 		id: "steadfast",
 		name: "Steadfast",
@@ -3914,6 +3928,17 @@ exports.BattleAbilities = {
 		rating: 3,
 		num: 36,
 	},
+	"tricky": {
+		desc: "On switch-in, this Pokemon sets up Trick Room for five turns.",
+		shortDesc: "On switch-in, Trick Room is set up.",
+		onStart: function(source) {
+			this.addPseudoWeather('trickroom', source, source);
+		},
+		id: "tricky",
+		name: "Tricky",
+		rating: 3,
+		num: -6
+	},
 	"truant": {
 		shortDesc: "This Pokemon skips every other turn instead of using a move.",
 		onBeforeMovePriority: 9,
@@ -4032,7 +4057,7 @@ exports.BattleAbilities = {
 		shortDesc: "This Pokemon's slashing and stabbing moves do 1.3x damage.",
 		onBasePowerPriority: 8,
 		onBasePower: function(atk, attacker, defender, move){
-			if(move.isSword){
+			if(move.flags['sword']){
 				return this.chainModify(1.3);
 			}
 		},
@@ -4120,6 +4145,26 @@ exports.BattleAbilities = {
 		name: "Voltage",
 		rating: 3,
 		num: -42
+	},
+	"warmachine": {
+		desc: "This Pokemon does 1.25x more damage and takes 0.75x damage.",
+		shortDesc: "This Pokemon does 1.25x more damage and takes 0.75x damage.",
+		onSourceBasePower: function(basePower, attacker, defender, move) {
+			if (move) {
+				return this.chainModify(0.75);
+			}
+		},
+		onBasePowerPriority: 8,
+		onBasePower: function(atk, attacker, defender, move){
+			if (move) {
+				this.debug('War Machine boost');
+				return this.chainModify(1.25);
+			}
+		},
+		id: "warmachine",
+		name: "War Machine",
+		rating: 3,
+		num: -6
 	},
 	"waterabsorb": {
 		desc: "This Pokemon is immune to Water-type moves and restores 1/4 of its maximum HP, rounded down, when hit by a Water-type move.",

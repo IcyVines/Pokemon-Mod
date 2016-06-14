@@ -5474,13 +5474,25 @@ var Battle = (function () {
 					actions += "Fire's power was weakened!";
 					break;
 				case 'grassyterrain':
-					actions += "Grass grew to cover the battlefield!";
+					actions += "Grass sprouts everywhere!";
 					break;
 				case 'mistyterrain':
-					actions += "Mist swirled about the battlefield!";
+					actions += "A pinkish mist fills the area!";
 					break;
 				case 'electricterrain':
-					actions += "An electric current runs across the battlefield!";
+					actions += "Electricity courses through the floor!";
+					break;
+				case 'fieryterrain':
+					actions += "The ground is set ablaze!";
+					break;
+				case 'marshyterrain':
+					actions += "Swampy water floods the field!";
+					break;
+				case 'royalterrain':
+					actions += "The arena is now a prideful domain!";
+					break;
+				case 'slushyterrain':
+					actions += "Slush and ice slosh about!";
 					break;
 				default:
 					actions += effect.name + " started!";
@@ -5513,13 +5525,25 @@ var Battle = (function () {
 					actions += 'The effects of Water Sport have faded.';
 					break;
 				case 'grassyterrain':
-					actions += "The grass disappeared from the battlefield.";
+					actions += "The grass withers away!";
 					break;
 				case 'mistyterrain':
-					actions += "The mist disappeared from the battlefield.";
+					actions += "The mist dissipates!";
 					break;
 				case 'electricterrain':
-					actions += "The electricity disappeared from the battlefield.";
+					actions += "The floor loses its charge!";
+					break;
+				case 'fieryterrain':
+					actions += "The fire dies down!";
+					break;
+				case 'marshyterrain':
+					actions += "The swampy water is absorbed into the ground!";
+					break;
+				case 'royalterrain':
+					actions += "The lingering dignity ends!";
+					break;
+				case 'slushyterrain':
+					actions += "The slush melts and vanishes!";
 					break;
 				default:
 					actions += effect.name + " ended!";
