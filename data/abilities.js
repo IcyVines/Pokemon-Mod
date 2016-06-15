@@ -51,15 +51,17 @@ exports.BattleAbilities = {
 	"acidic": {
 		desc: "This Pokemon's Poison-type moves are effective on Steel, Ground, and Rock types.",
 		shortDesc: "This Pokemon's Poison-type moves are effective on Steel, Ground, and Rock types.",
-		onModifyMove: function(move, pokemon, target) {
-			if (move.type === 'Poison') {
-				move.affectedByImmunities = false;
+		onModifyMovePriority: -5,
+		onModifyMove: function (move) {
+			if (!move.ignoreImmunity) move.ignoreImmunity = {};
+			if (move.ignoreImmunity !== true) {
+				move.ignoreImmunity['Poison'] = true;
 			}
 		},
 		onBasePowerPriority: 8,
 		onBasePower: function(atk, attacker, defender, move){
 			var defTypes = defender.getTypes();
-			var amount = 1;
+			var amount = 0;
 			for(var i = 0; i < defTypes.length; i++){
 				if(defTypes[i] in {'Rock':1,'Ground':1}){
 					amount += 2;
@@ -67,6 +69,8 @@ exports.BattleAbilities = {
 			}
 			if(amount > 1){
 				this.add('-message', attacker.name + '\'s venom, although not very effective, was more potent than anticipated!');
+			} else {
+				amount = 1;
 			}
 			return this.chainModify(amount);
 		},
@@ -841,7 +845,6 @@ exports.BattleAbilities = {
 				if (this.queue[i].choice !== 'runSwitch' && this.queue[i].choice !== 'runPrimal') break;
 			}
 			this.setWeather('raindance');
-			this.weatherData.duration = 8;
 		},
 		id: "drizzle",
 		name: "Drizzle",
@@ -856,7 +859,6 @@ exports.BattleAbilities = {
 				if (this.queue[i].choice !== 'runSwitch' && this.queue[i].choice !== 'runPrimal') break;
 			}
 			this.setWeather('sunnyday');
-			this.weatherData.duration = 8;
 		},
 		id: "drought",
 		name: "Drought",
@@ -1280,6 +1282,7 @@ exports.BattleAbilities = {
 		shortDesc: "This Pokemon is immune to certain status and has 1.5x defenses in some weather.",
 		onUpdate: function(pokemon) {
 			if (pokemon.status === 'slp' || pokemon.status === 'par') {
+				this.add('-activate', pokemon, 'ability: Full Bloom');
 				pokemon.cureStatus();
 			}
 		},
@@ -1290,11 +1293,11 @@ exports.BattleAbilities = {
 				this.add('-message', target.name + ' soaks up rainwater!');
 			}
 		},
-		onImmunity: function(type, pokemon) {
-			if (type === 'slp' || type === 'par') {
-				this.add('-immune', target, '[msg]');
-				return false;
-			}
+		onSetStatus: function (status, target, source, effect) {
+			if (status.id !== 'slp' || status.id !== 'par') return;
+			if (!effect || !effect.status) return false;
+			this.add('-immune', target, '[msg]', '[from] ability: Full Bloom');
+			return false;
 		},
 		onModifyDefPriority: 6,
 		onModifyDef: function(pokemon) {
@@ -1676,7 +1679,7 @@ exports.BattleAbilities = {
 					}
 				}
 				for (var i in sideConditions) {
-					if (i === 'reflect' || i === 'lightscreen') continue;
+					//if (i === 'reflect' || i === 'lightscreen') continue;
 					if (source.side.removeSideCondition(i)) {
 						this.add('-sideend', source.side, this.getEffect(i).name, '[from] ability: Intense Flames', '[of] '+source);
 					}
@@ -3010,7 +3013,6 @@ exports.BattleAbilities = {
 		shortDesc: "On switch-in, this Pokemon summons Sandstorm for 8 turns.",
 		onStart: function (source) {
 			this.setWeather('sandstorm');
-			this.weatherData.duration = 8;
 		},
 		id: "sandstream",
 		name: "Sand Stream",
@@ -3318,7 +3320,6 @@ exports.BattleAbilities = {
 		shortDesc: "On switch-in, this Pokemon summons Hail for 8 turns.",
 		onStart: function (source) {
 			this.setWeather('hail');
-			this.weatherData.duration = 8;
 		},
 		id: "snowwarning",
 		name: "Snow Warning",
@@ -3480,7 +3481,6 @@ exports.BattleAbilities = {
 		shortDesc: "On switch-in, the weather becomes Rain Dance.",
 		onStart: function(source) {
 			this.setWeather('raindance');
-			this.weatherData.duration = 8;
 		},
 		id: "stormcenter",
 		name: "Storm Center",
@@ -4019,17 +4019,36 @@ exports.BattleAbilities = {
 		inherit: true,
 		desc: "When this Pokemon enters the field, the highest defense stat of each of its opponents lowers by one stage.",
 		shortDesc: "On switch-in, this Pokemon lowers adjacent foes' highest defense stat by 1.",
+		onStart: function (pokemon) {
+			let foeactive = pokemon.side.foe.active;
+			let activated = false;
+			for (let i = 0; i < foeactive.length; i++) {
+				if (!foeactive[i] || !this.isAdjacent(foeactive[i], pokemon)) continue;
+				if (!activated) {
+					this.add('-ability', pokemon, 'Intimidate', 'boost');
+					activated = true;
+				}
+				if (foeactive[i].volatiles['substitute']) {
+					this.add('-immune', foeactive[i], '[msg]');
+				} else {
+					this.boost({atk: -1}, foeactive[i], pokemon);
+				}
+			}
+		},
 		onStart: function(pokemon) {
 			var foeactive = pokemon.side.foe.active;
+			let activated = false;
 			for (var i=0; i<foeactive.length; i++) {
-				if (!foeactive[i] || foeactive[i].fainted) continue;
+				if (!foeactive[i] || !this.isAdjacent(foeactive[i], pokemon)) continue;
+				if (!activated) {
+					this.add('-ability', pokemon, 'Underdog', 'boost');
+					activated = true;
+				}
 				if (foeactive[i].volatiles['substitute']) {
-					// does it give a message?
-					this.add('-activate',foeactive[i],'Substitute','ability: Underdog','[of] '+pokemon);
+					this.add('-immune', foeactive[i], '[msg]');
 				} else {
 					var def = foeactive[i].getStat('def', false, true);
 					var spDef = foeactive[i].getStat('spd', false, true);
-					this.add('-ability',pokemon,'Underdog','[of] '+foeactive[i]);
 					if (def >= spDef) this.boost({def: -1}, foeactive[i], pokemon);
 					else this.boost({spd: -1}, foeactive[i], pokemon);
 				}
