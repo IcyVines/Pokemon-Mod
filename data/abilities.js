@@ -623,8 +623,8 @@ exports.BattleAbilities = {
 					this.add('-sideend', foe.side, this.getEffect(i).name, '[from] ability: Cyclone', '[of] '+foe);
 				}
 			}
-			if(this.isWeather('raindance','sandstorm','hail')){
-				this.setWeather('');
+			if(this.isWeather(['raindance','sandstorm','hail'])){
+				this.clearWeather();
 			}
 		},
 		onDamage: function(damage, target, source, effect) {
