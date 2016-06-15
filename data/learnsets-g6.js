@@ -17673,7 +17673,9 @@ exports.BattleLearnsets = {
             iondeluge: ["6L001c"],
             dragonpulse: ["6L001d", "6L065"],
             poweruppunch: ["6M"],
-            confide: ["6M"]
+            confide: ["6M"],
+            jolt: ["6M"],
+            sparklerburns: ["6M"],
         }
     },
     azurill: {

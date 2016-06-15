@@ -4847,14 +4847,15 @@ exports.BattlePokedex = {
         baseStats: {
             hp: 90,
             atk: 75,
-            def: 85,
-            spa: 115,
-            spd: 90,
-            spe: 55
+            def: 90,
+            spa: 120,
+            spd: 95,
+            spe: 60
         },
         abilities: {
             0: "Static",
-            H: "Plus"
+            1: "Storm Center",
+            H: "Illuminate"
         },
         heightm: 1.4,
         weightkg: 61.5,
@@ -4874,10 +4875,10 @@ exports.BattlePokedex = {
         baseStats: {
             hp: 90,
             atk: 95,
-            def: 105,
-            spa: 165,
-            spd: 110,
-            spe: 45
+            def: 110,
+            spa: 170,
+            spd: 115,
+            spe: 50
         },
         abilities: {
             0: "Mold Breaker"

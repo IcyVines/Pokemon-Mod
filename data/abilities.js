@@ -924,14 +924,14 @@ exports.BattleAbilities = {
 		num: 27,
 	},
 	"entrancing": {
-		desc: "Opposing Pokemon of the opposite gender do 0.75x damage.",
-		shortDesc: "Opposing Pokemon of the opposite gender do 0.75x damage.",
+		desc: "Opposing Pokemon of the opposite gender do 0.65x damage.",
+		shortDesc: "Opposing Pokemon of the opposite gender do 0.65x damage.",
 		onModifyAtkPriority: 6,
 		onSourceModifyAtk: function(atk, attacker, defender, move) {
 			if(attacker.gender && defender.gender){
 				if(attacker.gender !== defender.gender){
 					this.add('-message', attacker.name + ' attacks with care.');
-					return this.chainModify(0.75);
+					return this.chainModify(0.65);
 				}
 			}
 		},
@@ -940,7 +940,7 @@ exports.BattleAbilities = {
 			if(attacker.gender && defender.gender){
 				if(attacker.gender !== defender.gender){
 					this.add('-message', attacker.name + ' attacks with care.');
-					return this.chainModify(0.75);
+					return this.chainModify(0.65);
 				}
 			}
 		},
@@ -1785,17 +1785,16 @@ exports.BattleAbilities = {
 		num: 103,
 	},
 	"laststand": {
-		desc: "Every time this Pokemon is switched in, it will survive a fatal hit one time. If it does, Attack, Special Attack, and Speed are raised by one stage.",
-		shortDesc: "This Pokemon can survive one fatal hit, raising its Attack, Special Attack and Speed by one stage.",
+		desc: "Every time this Pokemon is switched in, it will survive fatal damage one time. If it does, Attack, Special Attack, and Speed are raised by two stages.",
+		shortDesc: "This Pokemon will survive fatal damage, raising its Attack, Special Attack and Speed by two stages.",
 		onStart: function (pokemon) {
-			pokemon.addVolatile['laststand'];
+			pokemon.addVolatile('laststand');
 		},
 		onDamage: function(damage, target, source, effect) {
-			if (effect && effect.effectType === 'Move' && damage >= target.hp) {
+			if (damage >= target.hp) {
 				//if(Math.random()*100 < 30){
 				if(target.removeVolatile('laststand')) {
-					this.boost({atk:1, spa:1, spe:1});
-					this.debug('Last Stand Boost');
+					this.boost({atk:2, spa:2, spe:2});
 					return target.hp - 1;
 				}
 				//}
