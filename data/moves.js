@@ -3519,6 +3519,12 @@ exports.BattleMovedex = {
 		terrain: 'electricterrain',
 		effect: {
 			duration: 5,
+			durationCallback: function(target, source, effect) {
+			if (source && source.ability === 'terraformer') {
+					return 8;
+				}
+				return 5;
+			},
 			onSetStatus: function (status, target, source, effect) {
 				if (status.id === 'slp' && target.isGrounded() && !target.isSemiInvulnerable()) {
 					this.debug('Interrupting sleep from Electric Terrain');
@@ -4209,7 +4215,7 @@ exports.BattleMovedex = {
 			duration: 5,
 			durationCallback: function(target, source, effect) {
 			if (source && source.ability === 'terraformer') {
-					return 5;
+					return 8;
 				}
 				return 5;
 			},
@@ -5645,6 +5651,12 @@ exports.BattleMovedex = {
 		terrain: 'grassyterrain',
 		effect: {
 			duration: 5,
+			durationCallback: function(target, source, effect) {
+			if (source && source.ability === 'terraformer') {
+					return 8;
+				}
+				return 5;
+			},
 			onBasePower: function (basePower, attacker, defender, move) {
 				let weakenedMoves = {'earthquake':1, 'bulldoze':1, 'magnitude':1, 'quake':1};
 				if (move.id in weakenedMoves) {
@@ -8588,7 +8600,7 @@ exports.BattleMovedex = {
 			duration: 5,
 			durationCallback: function(target, source, effect) {
 			if (source && source.ability === 'terraformer') {
-					return 5;
+					return 8;
 				}
 				return 5;
 			},
@@ -9330,6 +9342,12 @@ exports.BattleMovedex = {
 		terrain: 'mistyterrain',
 		effect: {
 			duration: 5,
+			durationCallback: function(target, source, effect) {
+			if (source && source.ability === 'terraformer') {
+					return 8;
+				}
+				return 5;
+			},
 			onSetStatus: function (status, target, source, effect) {
 				if (!target.isGrounded() || target.isSemiInvulnerable()) return;
 				this.debug('misty terrain preventing status');
@@ -12121,7 +12139,7 @@ exports.BattleMovedex = {
 			duration: 5,
 			durationCallback: function(target, source, effect) {
 			if (source && source.ability === 'terraformer') {
-					return 5;
+					return 8;
 				}
 				return 5;
 			},
@@ -13325,8 +13343,7 @@ exports.BattleMovedex = {
 			duration: 5,
 			durationCallback: function(target, source, effect) {
 			if (source && source.ability === 'terraformer') {
-					return 5
-					;
+					return 8;
 				}
 				return 5;
 			},
